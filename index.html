@@ -50,27 +50,24 @@
 					<h1>An Infinispan Tale</h1>
 					<h3>How split clusters can get back together happily</h3>
 					<p>
-						<small>Tristan Tarrant / <a href="http://twitter.com/tristantarrant"><i class="fa fa-twitter"></i>@tristantarrant</a></small>
+						<small>Tristan Tarrant / <a href="http://twitter.com/tristantarrant"><i class="fa fa-twitter"></i> @tristantarrant</a></small>
 					</p>
 				</section>
 
 				<section>
 					<h2>About me</h2>
-					<p>
-						<img src="img/ttarrant.jpg" style="width: 20%"/>
-						<ul>
-							<li>Infinispan Project Lead</li>
-							<li>Open Source hacker since 1993</li>
-							<li>@ Red Hat since 2011</li>
-						</ul>
-					</p>
+					<img src="img/ttarrant.jpg" style="width: 20%"/>
+					<p>Infinispan Project Lead</p>
+					<p>Open Source hacker since 1993</p>
+					<p>@ Red Hat since 2011</p>
 				</section>
 
 				<section>
 					<h2>Agenda</h2>
 					<ul>
 						<li>What is Infinispan ?</li>
-						<li>How Infinispan handles cluster partitions</li>
+						<li>How does Infinispan approach clustering ?</li>
+						<li>How does Infinispan handle cluster partitions ?</li>
 					</ul>
 				</section>
 
@@ -78,15 +75,35 @@
 				<section>
 					<h2>What is Infinispan ?</h2>
 					<ul>
-						<li>In-Memory Java Key/Value store</li>
+						<li>In-Memory Java Key/Value store (with Scala bits)</li>
 						<li>Local + Clustered</li>
-						<li>Elastic</li>
-						<li>Transactional</li>
-						<li>Strongly consistent</li>
-						<li>Embedded + Client/Server</li>
-						<li>Distributed execution framework</li>
+						<li>Elastic + Highly scalable</li>
+						<li>Transactional + Strongly consistent</li>
 						<li>Distributed under the ASL 2.0</li>
+						<li>Supported product: Red Hat JBoss Data Grid</li>
 					</ul>
+				</section>
+				
+				<section>
+					<h2>What can Infinispan do ?</h2>
+					<ul>
+						<li>Optional persistence:<br/>File + LevelDB + JDBC + JPA + REST</li>
+						<li>Embedded + Client/Server</li>
+						<li>Remote Protocols:<br /> HotRod + REST + Memcached + WebSocket</li>
+						<li>Distributed execution framework</li>
+						<li>Indexed and Indexless queries</li>
+						<li>Events: local + clustered + remote</li>
+						<li>Security: ACL, Encryption, Audit</li>
+					</ul>
+				</section>
+				
+				<section>
+					<h2>Does Infinispan scale ?</h2>
+					<p class="fragment">Yes.</p>
+					<p class="fragment">Largest cluster in production:</p>
+					<p class="fragment">320 nodes, 3000 caches, 20TB RAM</p>
+					<p class="fragment">Largest cluster formed:</p>
+					<p class="fragment">1000 nodes</p>
 				</section>
 
 				<section>
@@ -122,6 +139,7 @@
 						<li>Hash space divided into segments</li>
 						<li>Segments assigned to nodes</li>
 						<li>Key > Segment > Owners</li>
+						<li>Primary and Backup owners</li>
 					</ul>
 				</section>
 				
@@ -228,26 +246,20 @@
 				
 				<section>
 					<h2>Partition handling strategies</h2>
-					<ul>
-					    <li class="fragment">Prefer availability
-					    	<ul>
-					    		<li>Configuration<pre>
+					<p class="fragment">Prefer availability</p>
+					<pre class="fragment">
 <code>&lt;distributed-cache&gt;
     &lt;partition-handling enabled="false"/&gt;
-&lt;/distributed-cache&gt;</code></pre></li>
-					    		<li>Accept data loss / inconsistency</li>
-					    	</ul>
-					    </li>
-					    <li class="fragment">Prefer consistency
-					    	<ul>
-					    		<li>Configuration<pre>
+&lt;/distributed-cache&gt;</code>
+<code>ConfigurationBuilder dcc =new ConfigurationBuilder();
+dcc.clustering().partitionHandling().enabled(false);</code></pre>
+				    <p class="fragment">Prefer consistency</p>
+					<pre class="fragment">
 <code>&lt;distributed-cache&gt;
     &lt;partition-handling enabled="true"/&gt;
-&lt;/distributed-cache&gt;</code></pre></li>
-					    		<li>Don't compromise integrity</li>
-					    	</ul>
-					    </li>
-					</ul>
+&lt;/distributed-cache&gt;</code>
+<code>ConfigurationBuilder dcc =new ConfigurationBuilder();
+dcc.clustering().partitionHandling().enabled(true);</code></pre>
 				</section>
 				
 				<section>
@@ -276,13 +288,20 @@
 				<section>
 					<h2>Merging split clusters</h2>
 					<ul>
-					    <li>Split clusters see each other again</li>
-					    <li>Ensure a stable topology</li>
-						<li>Decide new state based on partition state
+					    <li class="fragment">Split clusters see each other again</li>
+					    <li class="fragment">Ensure a stable topology</li>
+						<li class="fragment">Automatic: new state based on partition state
 							<ul>
 								<li>One unavailable partition &gt; UNAVAILABLE</li>
 								<li>One available partition &gt; attempt merge</li>
 								<li>All partitions are degraded &gt; attempt merge</li> 
+							</ul>
+						</li>
+						<li class="fragment">Manual
+							<ul>
+								<li>Data was lost</li>
+								<li>Custom listener on Merge event</li>
+								<li>It's up to YOU</li> 
 							</ul>
 						</li>
 					</ul>
@@ -291,21 +310,17 @@
 				<section>
 					<h2>Future work</h2>
 					<ul>
-					    <li>Reconcile state</li>
-					    <li>Eventual consistency !!!</li>
-					</ul>
-				</section>
-
-				<section>
-					<h2>Links</h2>
-					<ul>
-						<li><a href="http://infinispan.org">http://infinispan.org</a></li>
-						<li><a href="http://twitter.com/infinispan">@infinispan</a></li>
+					    <li class="fragment">Automatic state reconciliation</li>
+					    <li class="fragment">Eventual consistency !!!</li>
 					</ul>
 				</section>
 
 				<section>
 					<h1>Thanks / Q&A</h1>
+					<p><a href="http://infinispan.org"><i class="fa fa-cloud"></i> http://infinispan.org</a></p>
+					<p><a href="http://twitter.com/infinispan"><i class="fa fa-twitter"></i> @infinispan</a> + <a href="http://twitter.com/tristantarrant">@tristantarrant</a></p>
+					<p><a href="https://github.com/infinispan"><i class="fa fa-github"></i> https://github.com/infinispan</a></p>
+					<p><a href="https://github.com/tristantarrant/infinispan-presentation-splitbrain"><i class="fa fa-github"></i> https://github.com/tristantarrant/<br/>infinispan-presentation-splitbrain</a></p>
 				</section>
 
 			</div>
