@@ -1,0 +1,349 @@
+<!doctype html>
+<html lang="en">
+
+	<head>
+		<meta charset="utf-8">
+
+		<title>Infinispan Cluster Partition Handling</title>
+
+		<meta name="description" content="Infinispan Cluster Partition Handling" />
+		<meta name="author" content="Tristan Tarrant" />
+
+		<meta name="apple-mobile-web-app-capable" content="yes" />
+		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+
+		<link rel="stylesheet" href="css/reveal.min.css" />
+		<link rel="stylesheet" href="css/theme/solarized.css" id="theme" />
+
+		<!-- For syntax highlighting -->
+		<link rel="stylesheet" href="lib/css/zenburn.css" />
+		
+		<link rel="stylesheet" href="css/font-awesome.css" />
+		<style>
+			.reveal i{
+				font-family: 'FontAwesome';
+				font-style: normal;
+			}
+		</style>
+
+		<!-- If the query includes 'print-pdf', include the PDF print sheet -->
+		<script>
+			if( window.location.search.match( /print-pdf/gi ) ) {
+				var link = document.createElement( 'link' );
+				link.rel = 'stylesheet';
+				link.type = 'text/css';
+				link.href = 'css/print/pdf.css';
+				document.getElementsByTagName( 'head' )[0].appendChild( link );
+			}
+		</script>
+	</head>
+
+	<body>
+
+		<div class="reveal">
+
+			<!-- Any section element inside of this container is displayed as a slide -->
+			<div class="slides">
+				<section>
+					<h1>An Infinispan Tale</h1>
+					<h3>How split clusters can get back together happily</h3>
+					<p>
+						<small>Tristan Tarrant / <a href="http://twitter.com/tristantarrant"><i class="fa fa-twitter"></i>@tristantarrant</a></small>
+					</p>
+				</section>
+
+				<section>
+					<h2>About me</h2>
+					<p>
+						<img src="img/ttarrant.jpg" style="width: 20%"/>
+						<ul>
+							<li>Infinispan Project Lead</li>
+							<li>Open Source hacker since 1993</li>
+							<li>@ Red Hat since 2011</li>
+						</ul>
+					</p>
+				</section>
+
+				<section>
+					<h2>Agenda</h2>
+					<ul>
+						<li>What is Infinispan ?</li>
+						<li>How Infinispan handles cluster partitions</li>
+					</ul>
+				</section>
+
+
+				<section>
+					<h2>What is Infinispan ?</h2>
+					<ul>
+						<li>In-Memory Java Key/Value store</li>
+						<li>Local + Clustered</li>
+						<li>Elastic</li>
+						<li>Transactional</li>
+						<li>Strongly consistent</li>
+						<li>Embedded + Client/Server</li>
+						<li>Distributed execution framework</li>
+						<li>Distributed under the ASL 2.0</li>
+					</ul>
+				</section>
+
+				<section>
+					<h4>Infinispan clustering</h4>
+					<h2>Transport</h2>
+					<ul>
+						<li>Based on <a href="http://jgroups.org">JGroups</a></li>
+						<li>Multiprotocol: UDP + TCP</li>
+						<li>Discovery: Multicast + Unicast + S3 + Google + etc</li>
+						<li>Security</li>
+						<li>Geographical replication</li>
+					</ul>
+				</section>
+
+				<section>
+					<h4>Infinispan clustering</h4>
+					<h2>Cluster Topology</h2>
+					<ul>
+					    <li>JGroup views</li>
+						<li>Represents group membership</li>
+						<li>Each node has a unique address</li>
+						<li>Ordered, first is coordinator</li>
+						<li>View changes when nodes join + leave</li>
+						<li>View Id</li>
+					</ul>
+				</section>
+				
+				<section>
+					<h4>Infinispan clustering</h4>
+					<h2>Consistent Hashing</h2>
+					<ul>
+						<li>Key hashed using <a href="https://code.google.com/p/smhasher">MurmurHash3</a> algorithm</li>
+						<li>Hash space divided into segments</li>
+						<li>Segments assigned to nodes</li>
+						<li>Key > Segment > Owners</li>
+					</ul>
+				</section>
+				
+				<section data-transition="fade">
+					<h2>Consistent Hashing Visualization</h2>
+					<h4>Step 1: Empty cluster</h4>
+					<img src="img/ch00.png" />
+				</section>
+				
+				<section data-transition="fade">
+					<h2>Consistent Hashing Visualization</h2>
+					<h4>Step 2: Adding one entry</h4>
+					<img src="img/ch01.png" />
+				</section>
+				
+				<section data-transition="fade">
+					<h2>Consistent Hashing Visualization</h2>
+					<h4>Step 3: Primary and Backup</h4>
+					<img src="img/ch02.png" />
+				</section>
+				
+				<section data-transition="fade">
+					<h2>Consistent Hashing Visualization</h2>
+					<h4>Step 4: Another one</h4>
+					<img src="img/ch03.png" />
+				</section>
+				
+				<section data-transition="fade">
+					<h2>Consistent Hashing Visualization</h2>
+					<h4>Step 5: You get the idea</h4>
+					<img src="img/ch04.png" />
+				</section>
+				
+				<section data-transition="fade">
+					<h2>Consistent Hashing Visualization</h2>
+					<h4>Step 6: Here's one I made earlier</h4>
+					<img src="img/ch05.png" />
+				</section>
+				
+				<section>
+					<h4>Infinispan clustering</h4>
+					<h2>Controlling Consistent Hashing</h2>
+					<ul>
+						<li>Physical topology aware (site/rack/machine)</li>
+						<li>Grouping</li>
+						<li>Key Affinity service</li>
+						<li>Capacity Factor</li>
+					</ul>
+				</section>
+
+				<section>
+					<h4>Infinispan clustering</h4>
+					<h2>State Transfer</h2>
+					<ul>
+					    <li>Elasticity</li>
+						<li>Nodes added / removed</li>
+						<li>We still have at least one owner</li>
+						<li>Rebalancing: moving segments to satisfy distribution</li>
+					</ul>
+				</section>
+				
+				<section data-transition="fade">
+					<h2>Rebalancing Visualization</h2>
+					<h4>Step 1: My cluster full of data</h4>
+					<img src="img/ch05.png" />
+				</section>
+				
+				<section data-transition="fade">
+					<h2>Rebalancing Visualization</h2>
+					<h4>Step 2: He's dead, Jim</h4>
+					<img src="img/ch06.png" />
+				</section>
+				
+				<section data-transition="fade">
+					<h2>Rebalancing Visualization</h2>
+					<h4>Step 3: A healed cluster</h4>
+					<img src="img/ch07.png" />
+				</section>
+				
+				<section>
+					<h1>Disaster:</h1>
+					<h1>What if multiple nodes fail at once ?</h1>
+				</section>
+				
+				<section>
+					<h2>CAP: The Theorem</h2>
+					<ul>
+					    <li>Formulated by Eric Brewer in 1998</li>
+						<li>Consistency</li>
+						<li>Availability</li>
+						<li>Partitioning</li>
+						<li>Can only satisfy two properties at once</li>
+					</ul>
+				</section>
+				
+				<section>
+					<h2>CAP: The Combinations</h2>
+					<ul>
+						<li>Consistency + Availability: The "Ideal World"</li>
+						<li>Partitioning + Availability: "I bend so I don't break"</li>
+						<li>Partitioning + Consistency: "Don't corrupt my data"</li>
+					</ul>
+				</section>
+				
+				<section>
+					<h2>Partition handling strategies</h2>
+					<ul>
+					    <li class="fragment">Prefer availability
+					    	<ul>
+					    		<li>Configuration<pre>
+<code>&lt;distributed-cache&gt;
+    &lt;partition-handling enabled="false"/&gt;
+&lt;/distributed-cache&gt;</code></pre></li>
+					    		<li>Accept data loss / inconsistency</li>
+					    	</ul>
+					    </li>
+					    <li class="fragment">Prefer consistency
+					    	<ul>
+					    		<li>Configuration<pre>
+<code>&lt;distributed-cache&gt;
+    &lt;partition-handling enabled="true"/&gt;
+&lt;/distributed-cache&gt;</code></pre></li>
+					    		<li>Don't compromise integrity</li>
+					    	</ul>
+					    </li>
+					</ul>
+				</section>
+				
+				<section>
+					<h2>Split detection</h2>
+					<ul>
+					    <li>Lost >= number of owners</li>
+					    <li>Ensure a stable topology</li>
+						<li>Check segment ownership</li>
+						<li>Mark partition as available / degraded / unavailable</li>
+						<li>Send PartitionStatusChangedEvent to listeners</li>
+					</ul>
+				</section>
+				
+				<section data-transition="fade">
+					<h2>Cluster partitioning</h2>
+					<h4>Case 1: No data loss</h4>
+					<img src="img/ch08.png" />
+				</section>
+				
+				<section data-transition="fade">
+					<h2>Cluster partitioning</h2>
+					<h4>Case 2: Lost data</h4>
+					<img src="img/ch09.png" />
+				</section>
+				
+				<section>
+					<h2>Merging split clusters</h2>
+					<ul>
+					    <li>Split clusters see each other again</li>
+					    <li>Ensure a stable topology</li>
+						<li>Decide new state based on partition state
+							<ul>
+								<li>One unavailable partition &gt; UNAVAILABLE</li>
+								<li>One available partition &gt; attempt merge</li>
+								<li>All partitions are degraded &gt; attempt merge</li> 
+							</ul>
+						</li>
+					</ul>
+				</section>
+				
+				<section>
+					<h2>Future work</h2>
+					<ul>
+					    <li>Reconcile state</li>
+					    <li>Eventual consistency !!!</li>
+					</ul>
+				</section>
+
+				<section>
+					<h2>Links</h2>
+					<ul>
+						<li><a href="http://infinispan.org">http://infinispan.org</a></li>
+						<li><a href="http://twitter.com/infinispan">@infinispan</a></li>
+					</ul>
+				</section>
+
+				<section>
+					<h1>Thanks / Q&A</h1>
+				</section>
+
+			</div>
+
+		</div>
+
+		<script src="lib/js/head.min.js"></script>
+		<script src="js/reveal.min.js"></script>
+
+		<script>
+
+			// Full list of configuration options available here:
+			// https://github.com/hakimel/reveal.js#configuration
+			Reveal.initialize({
+				controls: true,
+				progress: true,
+				history: true,
+				center: true,
+
+				theme: Reveal.getQueryHash().theme, // available themes are in /css/theme
+				transition: Reveal.getQueryHash().transition || 'linear', // default/cube/page/concave/zoom/linear/fade/none
+
+				// Parallax scrolling
+				// parallaxBackgroundImage: 'https://s3.amazonaws.com/hakim-static/reveal-js/reveal-parallax-1.jpg',
+				// parallaxBackgroundSize: '2100px 900px',
+
+				// Optional libraries used to extend on reveal.js
+				dependencies: [
+					{ src: 'lib/js/classList.js', condition: function() { return !document.body.classList; } },
+					{ src: 'plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: 'plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: 'plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
+					{ src: 'plugin/zoom-js/zoom.js', async: true, condition: function() { return !!document.body.classList; } },
+					{ src: 'plugin/notes/notes.js', async: true, condition: function() { return !!document.body.classList; } }
+				]
+			});
+		</script>
+
+	</body>
+</html>
+
